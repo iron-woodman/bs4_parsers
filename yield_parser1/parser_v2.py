@@ -2,10 +2,12 @@ import json
 import requests
 from bs4 import BeautifulSoup as bs
 from time import sleep
+import os
 
 
 PAGE_COUNT=1
 PAUSE = 2
+DOWNLOAD_FOLDER = 'img'
 BASE_URL = 'https://scrapingclub.com'
 headers = \
     {
@@ -27,6 +29,24 @@ def write_data_to_csv(data, file):
         for item in data:
             f.write(';'.join(item))
             f.write('\n')
+
+
+def get_filename_from_url(url: str) -> str:
+    """
+    получить имя файла из url-адреса
+    :param url:
+    :return:
+    """
+    filename = url.split('/')[-1]
+    return filename
+
+def download(url):
+    responce = requests.get(url, stream=True) # потоковая загрузка
+    file = f'{DOWNLOAD_FOLDER}/{get_filename_from_url(url)}'
+    with open(file, "wb", ) as f:
+        for bulk_data in responce.iter_content(1024 * 1024): #пишем поток загрузки в файл по 1 Мб
+            f.write(bulk_data)
+
 
 
 def get_filename_from_sitenname(domen_name):
@@ -71,6 +91,7 @@ def get_card_data():
         price = card_data.find('h4', class_="my-4 card-price").text
         description = card_data.find('p', class_="card-description").text
         img_link = BASE_URL + card_data.find('img').get('src')
+        download(img_link)
 
         print(title, '\n', price, '\n', description, '\n', img_link)
         # write_to_json({'title':title, 'price': price, 'description': description, 'img':img_link}, get_filename_from_sitenname(BASE_URL))
@@ -79,6 +100,9 @@ def get_card_data():
 
 
 def main():
+
+
+    # get_filename_from_url('https://scrapingclub.com/static/img/94766-A.jpg')
     write_data_to_csv(get_card_data(), get_filename_from_sitenname(BASE_URL))
 
 if __name__ == "__main__":
